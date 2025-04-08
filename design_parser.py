@@ -3,146 +3,154 @@ from antlr4_systemverilog.systemverilog import SystemVerilogLexer, SystemVerilog
 from antlr4.ListTokenSource import ListTokenSource
 import re
 
+
 def parse(Design):
-   lexer = SystemVerilogLexer(InputStream(Design))
-   token_stream = CommonTokenStream(lexer)
+    lexer = SystemVerilogLexer(InputStream(Design))
+    token_stream = CommonTokenStream(lexer)
 
-   # 填充Token流
-   token_stream.fill()
+    # Fill the Token stream
+    token_stream.fill()
 
-   # 创建一个空列表来存储DIRECTIVES通道的Tokens
-   directive_tokens = []
+    # Create an empty list to store Tokens from the DIRECTIVES channel
+    directive_tokens = []
 
-   # 遍历token_stream中的所有Tokens
-   for token in token_stream.tokens:
-      # 检查token的通道是否是DIRECTIVES
-      if token.channel != 2:
-         # 如果是，将token添加到directive_tokens列表中
-         directive_tokens.append(token)
+    # Iterate through all Tokens in the token_stream
+    for token in token_stream.tokens:
+        # Check if the token's channel is DIRECTIVES
+        if token.channel != 2:
+            # If yes, add the token to the directive_tokens list
+            directive_tokens.append(token)
 
+    # If no Tokens from the DIRECTIVES channel are found, return EOF directly
+    if not directive_tokens:
+        print("No DIRECTIVES tokens found")
+        return None
 
-   # 如果没有找到DIRECTIVES通道的Tokens，直接返回EOF
-   if not directive_tokens:
-      print("No DIRECTIVES tokens found")
-      return None
+    # Create a new TokenStream containing only Tokens from the DIRECTIVES channel
+    directive_token_source = ListTokenSource(directive_tokens)
+    filtered_token_stream = CommonTokenStream(directive_token_source)
 
-   # 创建新的TokenStream仅包含DIRECTIVES通道的Tokens
-   directive_token_source = ListTokenSource(directive_tokens)
-   filtered_token_stream = CommonTokenStream(directive_token_source)
+    # Create a Parser and parse
+    parser = SystemVerilogParser(filtered_token_stream)
+    return parser
 
-   # 创建Parser并解析
-   parser = SystemVerilogParser(filtered_token_stream)
-   return parser
 
 "This function is used to convert the systemverilog to a tree"
+
+
 def parse_design_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.source_text()
-   return tree
+    parser = parse(Design)
+    tree = parser.source_text()
+    return tree
+
 
 def parse_port_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.list_of_port_declarations()
-   return tree
+    parser = parse(Design)
+    tree = parser.list_of_port_declarations()
+    return tree
+
 
 def parse_parameter_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.module_parameter_port_list()
-   return tree
+    parser = parse(Design)
+    tree = parser.module_parameter_port_list()
+    return tree
+
 
 def parse_module_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.module_item()
-   return tree
+    parser = parse(Design)
+    tree = parser.module_item()
+    return tree
+
 
 def parse_net_declare_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.net_declaration()
-   return tree
+    parser = parse(Design)
+    tree = parser.net_declaration()
+    return tree
+
 
 def parse_reg_declare_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.reg_declaration()
-   return tree
+    parser = parse(Design)
+    tree = parser.reg_declaration()
+    return tree
+
 
 def parse_mod_ins_to_tree(Design):
-   parser = parse(Design)
-   tree = parser.module_instantiation()
-   return tree
+    parser = parse(Design)
+    tree = parser.module_instantiation()
+    return tree
+
 
 def extract_module(verilog_code: str, module_name: str) -> str:
     """
-    从Verilog代码中提取指定模块的定义。
+    Extract the definition of the specified module from Verilog code.
 
-    :param verilog_code: 包含整个设计的Verilog代码字符串
-    :param module_name: 要提取的模块名称
-    :return: 提取出的模块字符串
+    :param verilog_code: Verilog code string containing the entire design
+    :param module_name: Name of the module to extract
+    :return: Extracted module string
     """
-    
-    # 使用正则表达式匹配模块开头和结尾
-    # 这个正则表达式匹配 "module module_name" 到 "endmodule" 之间的内容
-    # \b 确保 module_name 是全词匹配，后面可以跟空白字符或括号等
-    module_pattern = re.compile(rf'\bmodule\s+{module_name}\b\s*.*?endmodule', re.S)
-    
-    # 搜索模块
+
+    # Use regular expressions to match the beginning and end of the module
+    # This regular expression matches content between "module module_name" and "endmodule"
+    # \b ensures module_name is matched as a whole word, followed by whitespace or parentheses
+    module_pattern = re.compile(rf"\bmodule\s+{module_name}\b\s*.*?endmodule", re.S)
+
+    # Search for the module
     match = module_pattern.search(verilog_code)
-    
+
     if match:
-        # 返回匹配到的模块字符串
+        # Return the matched module string
         return match.group(0)
     else:
-        # 如果没有找到对应模块，返回空字符串或者提示
+        # If the corresponding module is not found, return an empty string or a prompt
         return f"Error: Module '{module_name}' not found."
-    
+
+
 def extract_modules(verilog_code: str, module_name: dict) -> str:
     """
-    从Verilog代码中提取指定模块的定义。
+    Extract the definitions of specified modules from Verilog code.
 
-    :param verilog_code: 包含整个设计的Verilog代码字符串
-    :param module_name: 要提取的模块名称
-    :return: 提取出的模块字符串
+    :param verilog_code: Verilog code string containing the entire design
+    :param module_name: Names of the modules to extract
+    :return: Extracted module strings
     """
-    
-    # 使用正则表达式匹配模块开头和结尾
-    # 这个正则表达式匹配 "module module_name" 到 "endmodule" 之间的内容
-    # \b 确保 module_name 是全词匹配，后面可以跟空白字符或括号等
+
+    # Use regular expressions to match the beginning and end of the modules
+    # This regular expression matches content between "module module_name" and "endmodule"
+    # \b ensures module_name is matched as a whole word, followed by whitespace or parentheses
     instance_design_str_list = []
     for key in module_name:
-         module_pattern = re.compile(rf'\bmodule\s+{key}\b\s*.*?endmodule', re.S)
-         match = module_pattern.search(verilog_code)
-         if match:
+        module_pattern = re.compile(rf"\bmodule\s+{key}\b\s*.*?endmodule", re.S)
+        match = module_pattern.search(verilog_code)
+        if match:
             instance_design_str_list.append(match.group(0))
-   #  module_pattern = re.compile(rf'\bmodule\s+{module_name}\b\s*.*?endmodule', re.S)
-    
-   #  # 搜索模块
-   #  match = module_pattern.search(verilog_code)
-    
+
     if instance_design_str_list != []:
-        # 返回匹配到的模块字符串
+        # Return the matched module strings
         return instance_design_str_list
     else:
-        # 如果没有找到对应模块，返回空字符串或者提示
+        # If the corresponding modules are not found, return an empty string or a prompt
         return f"Error: Module '{module_name}' not found."
-     
+
+
 def replace_module(verilog_code: str, module_name: str, new_module_code: str) -> str:
     """
-    替换Verilog代码中的指定模块为新的模块定义，并手动处理特殊字符。
+    Replace the specified module in Verilog code with a new module definition, and manually handle special characters.
 
-    :param verilog_code: 包含整个芯片设计的Verilog代码字符串
-    :param module_name: 要替换的模块名称
-    :param new_module_code: 新的模块定义字符串
-    :return: 返回替换后的完整Verilog代码
+    :param verilog_code: Verilog code string containing the entire chip design
+    :param module_name: Name of the module to replace
+    :param new_module_code: New module definition string
+    :return: Updated Verilog code with the replaced module
     """
-    
+
     new_module_code = extract_module(new_module_code, module_name)
-    
-    # 正则表达式匹配目标模块
-    module_pattern = re.compile(rf'module\s+{module_name}\s*.*?endmodule', re.S)
 
-    # 手动转义替换字符串中的百分号和反斜杠
-    safe_new_module_code = new_module_code.replace('\\', '\\\\')
+    # Regular expression to match the target module
+    module_pattern = re.compile(rf"module\s+{module_name}\s*.*?endmodule", re.S)
 
-    # 使用 re.sub() 进行替换
+    # Manually escape percentage signs and backslashes in the replacement string
+    safe_new_module_code = new_module_code.replace("\\", "\\\\")
+
+    # Use re.sub() for replacement
     updated_verilog_code = re.sub(module_pattern, safe_new_module_code, verilog_code)
 
     return updated_verilog_code
