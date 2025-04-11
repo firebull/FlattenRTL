@@ -5,6 +5,8 @@ import os
 import shutil
 import sys
 
+from rich import print
+
 sys.setrecursionlimit(3000)
 
 
@@ -26,8 +28,7 @@ def argparser():
 
 
 def main():
-    banner = """ Welcome to FlattenRTL! """
-    print(banner)
+    print("[blue] Welcome to FlattenRTL! [/blue]")
     parser = argparser()
     args = parser.parse_args()
 
@@ -53,8 +54,8 @@ def main():
             design += content + "\n"
 
     if design.strip() == "":
-        print("[ERROR] The design is empty. Please check the filelist and the files.")
-        print("[ERROR] Exiting...")
+        print("[red]ERROR[/red] The design is empty. Please check the filelist and the files.")
+        print("[red]ERROR[/red] Exiting...")
         exit(1)
 
     exclude_module = set()
@@ -66,10 +67,10 @@ def main():
     # all intermediate flattened results will be stored in directory/tmp
     if args.debug:
         tmp_folder = pathlib.Path(directory, "tmp")
-        print(f"[INFO] Intermediate flattened files will be saved in {tmp_folder}")
+        print(f"[green]INFO[/green] Intermediate flattened files will be saved in {tmp_folder}")
 
         if os.path.exists(tmp_folder):
-            print(f"[INFO] Removing existing files in {tmp_folder}")
+            print(f"[green]INFO[/green] Removing existing files in {tmp_folder}")
             shutil.rmtree(tmp_folder)
         os.mkdir(tmp_folder)
 
@@ -81,7 +82,7 @@ def main():
         while not done:
             if args.debug:
                 tmp_output_file = pathlib.Path(tmp_folder, f"flatten_{tmp_idx}.v")
-                print(f"[INFO] Writing intermediate flattened design in {tmp_output_file}")
+                print(f"[green]INFO[/green] Writing intermediate flattened design in '{tmp_output_file}'")
                 with open(tmp_output_file, "w") as f:
                     f.write(tmp_flatten_design)
                 tmp_idx += 1  # tmp_idx加1
@@ -89,11 +90,11 @@ def main():
 
         # write to output file
         with open(output_file, "w") as f:
-            print(f"[INFO] Writing the final flattened design in {output_file}")
+            print(f"[green]INFO[/green] Writing the final flattened design into '{output_file}'")
             f.write(tmp_flatten_design)
 
         # format
-        print(f"[INFO] Formating the flattened design in {output_file} using iStyle")
+        # print(f"[green]INFO[/green] Formating the flattened design in '{output_file}' using iStyle")
 
 
 if __name__ == "__main__":
@@ -103,4 +104,4 @@ if __name__ == "__main__":
     start = time.time()
     main()
     end = time.time()
-    print(f"[INFO] Total time: {end - start} seconds")
+    print(f"[green]INFO[/green] Total time: {end - start} seconds")
