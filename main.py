@@ -13,7 +13,20 @@ sys.setrecursionlimit(3000)
 def argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument("dir", type=str, help="The working directory.")
-    parser.add_argument("-f", "--filelist", type=str, default="filelist.f", help="The filelist of design.")
+    parser.add_argument(
+        "-f",
+        "--filelist",
+        type=str,
+        default="filelist.f",
+        help="The file with list of design. Wont be used if -l is provided.",
+    )
+    parser.add_argument(
+        "-l",
+        "--list",
+        help="The list of files to be flattened separated by `,`. If not provided, all files in the filelist will be used.",
+        type=str,
+        default="",
+    )
     parser.add_argument("-t", "--top", type=str, default="top", help="The name of the top module.")
     parser.add_argument(
         "-o",
@@ -34,14 +47,21 @@ def main():
 
     directory = args.dir
 
-    input_filelist = pathlib.Path(directory, args.filelist)
+    if args.list == "":
+        input_filelist = pathlib.Path(directory, args.filelist)
+
+        with open(input_filelist, "r") as f:
+            files = f.readlines()
+    else:
+        input_filelist = args.list.split(",")
+        files = []
+        for item in input_filelist:
+            files.append(item.strip())
+
     output_file = pathlib.Path(directory, args.output)
 
     if os.path.exists(output_file):
         os.remove(path=output_file)
-
-    with open(input_filelist, "r") as f:
-        files = f.readlines()
 
     design = ""
     for item in files:
