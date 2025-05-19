@@ -6,6 +6,9 @@ from enum import Enum, EnumMeta
 from typing import Any, Dict, List, Optional, Tuple
 
 from rich import print
+from rich.table import Table
+from rich.text import Text
+from rich.console import Console
 
 from antlr4.tree.Tree import TerminalNodeImpl
 from antlr4_systemverilog.systemverilog import SystemVerilogParser, SystemVerilogParserVisitor
@@ -102,7 +105,7 @@ class TopModuleNodeFinder(SystemVerilogParserVisitor):
 class MyModuleInstantiationVisitor(SystemVerilogParserVisitor):
     def __init__(self, exclude_module):
         self.is_first_instantiation_module = False
-        self.module_identifier_dict = {}
+        self.module_identifier_dict: Dict[str, List[str]] = {}
         self.module_param = []
         self.name_of_module_instances = []
         self.list_of_ports_rhs = []
@@ -1041,9 +1044,9 @@ class IdentifierVisitor(SystemVerilogParserVisitor):
             add_txt_to_list(self.tmp_design, " " * 2 + self.design[self.stop[-1] + 1 :])
 
 
-def pyflattenverilog(design: str, top_module: str, exlude_module: set) -> Tuple[bool, str]:
+def pyflattenverilog(design: str, top_module: str, excluded_modules: set) -> Tuple[bool, str]:
     bar = FillingSquaresBar(
-        "{:<20}".format("Top node: "),
+        "{:<20}".format("Top node parse: "),
         color="green",
         max=4,
         suffix="%(percent)d%% - %(elapsed)ds",
@@ -1062,7 +1065,7 @@ def pyflattenverilog(design: str, top_module: str, exlude_module: set) -> Tuple[
     bar.next()
 
     # Step 2. Collect instantiation information of the top-level node
-    visitor = MyModuleInstantiationVisitor(exlude_module)
+    visitor = MyModuleInstantiationVisitor(excluded_modules)
     visitor.visit(top_node_tree)
     cur_module_identifier_dict = visitor.module_identifier_dict
     cur_name_of_module_instances = visitor.name_of_module_instances
@@ -1076,7 +1079,24 @@ def pyflattenverilog(design: str, top_module: str, exlude_module: set) -> Tuple[
     if cur_module_identifier_dict == {}:
         return True, top_design_str
     else:
-        print(f"MODULE: {cur_module_identifier_dict}")
+        table = Table(title="Module instances")
+        table.add_column("#", justify="right", style="cyan")
+        table.add_column("Module name", justify="left", style="cyan")
+        table.add_column("Instance name", justify="left", style="magenta")
+
+        for i, key in enumerate(cur_module_identifier_dict):
+            for j in range(0, len(cur_module_identifier_dict[key])):
+                is_last = j == len(cur_module_identifier_dict[key]) - 1
+                table.add_row(
+                    str(i + 1) if j == 0 else None,
+                    key if j == 0 else None,
+                    cur_module_identifier_dict[key][j],
+                    end_section=is_last,
+                )
+
+        print()
+        print(table)
+        print()
 
     bar = FillingSquaresBar(
         "{:<20}".format("Processing: "),
